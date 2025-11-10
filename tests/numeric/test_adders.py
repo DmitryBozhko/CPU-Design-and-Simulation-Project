@@ -31,6 +31,7 @@ def test_full_adder_truth_table() -> None:
     for inputs in expected:
         assert full_adder(*inputs) == expected[inputs]
 
+
 def _int_to_bits(value: int, width: int) -> list[int]:
     return [(value >> index) & 1 for index in range(width)]
 

@@ -86,6 +86,11 @@ def compare_signed(a_bits: list[int], b_bits: list[int]) -> int:
 
     a_sign = _sign_bit(a_bits)
     b_sign = _sign_bit(b_bits)
+    if a_sign ^ b_sign:
+        if a_sign:
+            return -1
+
+        return 1
     aligned_a, aligned_b = _align_bits(a_bits, a_sign, b_bits, b_sign)
     aligned_a.append(a_sign)
     aligned_b.append(b_sign)
