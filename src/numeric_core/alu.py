@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .adders import ripple_carry_adder
 from .comparators import compare_signed, compare_unsigned, is_zero
+from .shifter import sll, sra, srl
 from .twos_complement import negate_twos_complement
 
 
@@ -46,8 +47,9 @@ def _sign_extend(bits: list[int], width: int) -> list[int]:
 class ALU:
     _ADD_OPS = {"ADD", "SUB"}
     _LOGIC_OPS = {"AND", "OR", "XOR", "NOT"}
+    _SHIFT_OPS = {"SLL", "SRL", "SRA"}
     _COMPARE_OPS = {"SLT", "SLTU"}
-    _COMPARE_RESULT_WIDTH = 32
+    _SHIFT_WEIGHTS = (1, 2, 4, 8, 16)
 
     def execute(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
 
@@ -55,6 +57,8 @@ class ALU:
             return self._execute_add_sub(op, a_bits, b_bits)
         if op in self._LOGIC_OPS:
             return self._execute_logic(op, a_bits, b_bits)
+        if op in self._SHIFT_OPS:
+            return self._execute_shift(op, a_bits, b_bits)
         if op in self._COMPARE_OPS:
             return self._execute_compare(op, a_bits, b_bits)
 
@@ -146,6 +150,52 @@ class ALU:
             "C": 0,
             "V": 0,
         }
+    
+    def _execute_shift(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
+
+        width = len(a_bits)
+        if width <= 0:
+            width = 1
+
+        operand = _sign_extend(a_bits, width)
+        shamt_bits = _normalize_bits(b_bits)[:5]
+
+        while len(shamt_bits) < 5:
+            shamt_bits.append(0)
+
+        shamt = self._shift_amount_from_bits(shamt_bits)
+
+        if op == "SLL":
+            shifted = sll(operand, shamt)
+        elif op == "SRL":
+            shifted = srl(operand, shamt)
+        else:
+            shifted = sra(operand, shamt)
+
+        result = shifted[:width]
+
+        return {
+            "result": result,
+            "N": _sign_bit(result),
+            "Z": 1 if is_zero(result) else 0,
+            "C": 0,
+            "V": 0,
+        }
+
+    def _shift_amount_from_bits(self, bits: list[int]) -> int:
+
+        amount = 0
+        limit = len(self._SHIFT_WEIGHTS)
+
+        for index in range(limit):
+            if index >= len(bits):
+                break
+
+            bit = bits[index]
+            if bit:
+                amount += self._SHIFT_WEIGHTS[index]
+
+        return amount
 
     def _execute_compare(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
 
