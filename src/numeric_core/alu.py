@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .adders import ripple_carry_adder
-from .comparators import is_zero
+from .comparators import compare_signed, compare_unsigned, is_zero
 from .twos_complement import negate_twos_complement
 
 
@@ -46,6 +46,8 @@ def _sign_extend(bits: list[int], width: int) -> list[int]:
 class ALU:
     _ADD_OPS = {"ADD", "SUB"}
     _LOGIC_OPS = {"AND", "OR", "XOR", "NOT"}
+    _COMPARE_OPS = {"SLT", "SLTU"}
+    _COMPARE_RESULT_WIDTH = 32
 
     def execute(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
 
@@ -53,6 +55,8 @@ class ALU:
             return self._execute_add_sub(op, a_bits, b_bits)
         if op in self._LOGIC_OPS:
             return self._execute_logic(op, a_bits, b_bits)
+        if op in self._COMPARE_OPS:
+            return self._execute_compare(op, a_bits, b_bits)
 
         raise ValueError(f"Unsupported ALU operation: {op!r}")
 
@@ -134,6 +138,34 @@ class ALU:
                     bit = (a_bit ^ b_bit) & 1
 
             result.append(bit)
+
+        return {
+            "result": result,
+            "N": _sign_bit(result),
+            "Z": 1 if is_zero(result) else 0,
+            "C": 0,
+            "V": 0,
+        }
+
+    def _execute_compare(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
+
+        if op == "SLT":
+            relation = compare_signed(a_bits, b_bits)
+        else:
+            relation = compare_unsigned(a_bits, b_bits)
+
+        less_bit = 0
+        if relation == -1:
+            less_bit = 1
+
+        width = self._COMPARE_RESULT_WIDTH
+        result: list[int] = []
+
+        for index in range(width):
+            if index == 0:
+                result.append(less_bit)
+            else:
+                result.append(0)
 
         return {
             "result": result,
