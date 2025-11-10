@@ -45,6 +45,7 @@ def _sign_extend(bits: list[int], width: int) -> list[int]:
 
 
 class ALU:
+    _COMPARE_RESULT_WIDTH = 32
     _ADD_OPS = {"ADD", "SUB"}
     _LOGIC_OPS = {"AND", "OR", "XOR", "NOT"}
     _SHIFT_OPS = {"SLL", "SRL", "SRA"}
