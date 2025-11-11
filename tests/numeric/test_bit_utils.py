@@ -1,9 +1,14 @@
 import pytest
-from src.numeric_core.bit_utils import bit_to_char, print_bits_formatted, char_to_bit, string_to_bits, bits_to_string
+from src.numeric_core.bit_utils import (
+    bit_to_char,
+    print_bits_formatted,
+    char_to_bit,
+    string_to_bits,
+    bits_to_string,
+)
 
 
 class TestBitToChar:
-
     def test_zero_to_char(self):
         assert bit_to_char(0) == "0"
 
@@ -26,7 +31,6 @@ class TestBitToChar:
 
 
 class TestCharToBit:
-
     def test_char_zero_to_bit(self):
         assert char_to_bit("0") is False
         assert char_to_bit("0") == 0
@@ -45,7 +49,6 @@ class TestCharToBit:
 
 
 class TestBitsToString:
-
     def test_empty_list(self):
         assert bits_to_string([]) == ""
 
@@ -70,7 +73,6 @@ class TestBitsToString:
 
 
 class TestStringToBits:
-
     def test_empty_string(self):
         assert string_to_bits("") == []
 
@@ -96,7 +98,6 @@ class TestStringToBits:
 
 
 class TestRoundTrip:
-
     def test_string_to_bits_to_string(self):
         original = "10101010"
         bits = string_to_bits(original)
@@ -121,7 +122,6 @@ class TestRoundTrip:
 
 
 class TestPrintBitsFormatted:
-
     def test_sixteen_bits_example(self):
         bits = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1]
         result = print_bits_formatted(bits, 16)
@@ -191,7 +191,6 @@ class TestPrintBitsFormatted:
 
 
 class TestNoIntOrBinUsed:
-
     def test_no_int_base_2_conversion(self):
         bits = [1, 0, 1, 0]
         s = bits_to_string(bits)
@@ -205,7 +204,7 @@ class TestNoIntOrBinUsed:
             for _ in range(4):
                 bits.insert(0, val % 2)
                 val //= 2
-            
+
             s = bits_to_string(bits)
             assert len(s) == 4
             assert all(c in "01" for c in s)

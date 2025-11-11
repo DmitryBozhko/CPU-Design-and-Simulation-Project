@@ -1,5 +1,4 @@
 from __future__ import annotations
-import itertools
 import random
 from src.numeric_core.adders import full_adder, half_adder, ripple_carry_adder
 

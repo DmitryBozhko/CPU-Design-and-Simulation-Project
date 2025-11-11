@@ -1,41 +1,40 @@
 from __future__ import annotations
 
-from itertools import repeat
+
+def _fill(value: int, count: int) -> list[int]:
+    filled: list[int] = []
+    for _ in range(count):
+        filled.append(value & 1)
+    return filled
 
 
-def _normalize_bits(bits: list[int]) -> list[int]:
+def _normalize(bits: list[int]) -> list[int]:
     normalized: list[int] = []
     for bit in bits:
         normalized.append(bit & 1)
     return normalized
 
 
-def _fill(bit_value: int, count: int) -> list[int]:
-    normalized_bit = bit_value & 1
-    filled: list[int] = []
-    for _ in repeat(None, count):
-        filled.append(normalized_bit)
-    return filled
-
-
 def _retain_width(bits: list[int], width: int) -> list[int]:
-    if width:
-        return bits[:width]
-    return []
+    retained: list[int] = []
+    for index in range(width):
+        if index < len(bits):
+            retained.append(bits[index] & 1)
+        else:
+            retained.append(0)
+    return retained
 
 
 def sll(bits: list[int], shamt: int) -> list[int]:
-    normalized = _normalize_bits(bits)
+    normalized = _normalize(bits)
     width = len(normalized)
-    padding = _fill(0, shamt)
-    shifted: list[int] = []
-    shifted.extend(padding)
+    shifted = _fill(0, shamt)
     shifted.extend(normalized)
     return _retain_width(shifted, width)
 
 
 def srl(bits: list[int], shamt: int) -> list[int]:
-    normalized = _normalize_bits(bits)
+    normalized = _normalize(bits)
     width = len(normalized)
     trimmed = normalized[shamt:]
     padding = _fill(0, shamt)
@@ -44,11 +43,11 @@ def srl(bits: list[int], shamt: int) -> list[int]:
 
 
 def sra(bits: list[int], shamt: int) -> list[int]:
-    normalized = _normalize_bits(bits)
+    normalized = _normalize(bits)
     width = len(normalized)
     sign_bit = 0
-    for bit in normalized:
-        sign_bit = bit & 1
+    if normalized:
+        sign_bit = normalized[-1]
     trimmed = normalized[shamt:]
     padding = _fill(sign_bit, shamt)
     trimmed.extend(padding)
