@@ -12,14 +12,18 @@ class TestBitToChar:
     def test_zero_to_char(self):
         assert bit_to_char(0) == "0"
 
+
     def test_one_to_char(self):
         assert bit_to_char(1) == "1"
+
 
     def test_false_to_char(self):
         assert bit_to_char(False) == "0"
 
+
     def test_true_to_char(self):
         assert bit_to_char(True) == "1"
+
 
     def test_invalid_bit_raises(self):
         with pytest.raises(ValueError, match="Invalid bit value"):
@@ -35,9 +39,11 @@ class TestCharToBit:
         assert char_to_bit("0") is False
         assert char_to_bit("0") == 0
 
+
     def test_char_one_to_bit(self):
         assert char_to_bit("1") is True
         assert char_to_bit("1") == 1
+
 
     def test_invalid_char_raises(self):
         with pytest.raises(ValueError, match="Invalid bit character"):
@@ -52,20 +58,26 @@ class TestBitsToString:
     def test_empty_list(self):
         assert bits_to_string([]) == ""
 
+
     def test_single_zero(self):
         assert bits_to_string([0]) == "0"
+
 
     def test_single_one(self):
         assert bits_to_string([1]) == "1"
 
+
     def test_multiple_bits(self):
         assert bits_to_string([1, 0, 1, 0]) == "1010"
+
 
     def test_all_zeros(self):
         assert bits_to_string([0, 0, 0, 0]) == "0000"
 
+
     def test_all_ones(self):
         assert bits_to_string([1, 1, 1, 1]) == "1111"
+
 
     def test_sixteen_bits(self):
         bits = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1]
@@ -76,20 +88,26 @@ class TestStringToBits:
     def test_empty_string(self):
         assert string_to_bits("") == []
 
+
     def test_single_zero(self):
         assert string_to_bits("0") == [0]
+
 
     def test_single_one(self):
         assert string_to_bits("1") == [1]
 
+
     def test_multiple_bits(self):
         assert string_to_bits("1010") == [1, 0, 1, 0]
+
 
     def test_all_zeros(self):
         assert string_to_bits("0000") == [0, 0, 0, 0]
 
+
     def test_all_ones(self):
         assert string_to_bits("1111") == [1, 1, 1, 1]
+
 
     def test_sixteen_bits(self):
         s = "0000000000000101"
@@ -104,15 +122,18 @@ class TestRoundTrip:
         result = bits_to_string(bits)
         assert result == original
 
+
     def test_bits_to_string_to_bits(self):
         original = [1, 0, 1, 0, 1, 0, 1, 0]
         s = bits_to_string(original)
         result = string_to_bits(s)
         assert result == original
 
+
     def test_empty_round_trip(self):
         assert bits_to_string(string_to_bits("")) == ""
         assert string_to_bits(bits_to_string([])) == []
+
 
     def test_sixteen_bit_round_trip(self):
         original = "0000000000000101"
@@ -127,44 +148,53 @@ class TestPrintBitsFormatted:
         result = print_bits_formatted(bits, 16)
         assert result == "0000_0000_0000_0101"
 
+
     def test_eight_bits(self):
         bits = [1, 0, 1, 0, 1, 0, 1, 0]
         result = print_bits_formatted(bits, 8)
         assert result == "1010_1010"
+
 
     def test_four_bits(self):
         bits = [1, 0, 1, 0]
         result = print_bits_formatted(bits, 4)
         assert result == "1010"
 
+
     def test_twelve_bits(self):
         bits = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
         result = print_bits_formatted(bits, 12)
         assert result == "1010_1010_1010"
+
 
     def test_padding_short_bits(self):
         bits = [1, 0, 1, 0, 1]
         result = print_bits_formatted(bits, 8)
         assert result == "0001_0101"
 
+
     def test_padding_to_sixteen(self):
         bits = [1, 0, 1]
         result = print_bits_formatted(bits, 16)
         assert result == "0000_0000_0000_0101"
+
 
     def test_no_padding(self):
         bits = [1, 0, 1, 0, 1]
         result = print_bits_formatted(bits, 0)
         assert result == "1_0101"
 
+
     def test_width_smaller_than_bits(self):
         bits = [1, 0, 1, 0, 1, 0, 1, 0]
         result = print_bits_formatted(bits, 4)
         assert result == "1010_1010"
 
+
     def test_empty_bits_with_width(self):
         result = print_bits_formatted([], 8)
         assert result == "0000_0000"
+
 
     def test_empty_bits_no_width(self):
         result = print_bits_formatted([], 0)
@@ -174,15 +204,18 @@ class TestPrintBitsFormatted:
         with pytest.raises(ValueError, match="width must be non-negative"):
             print_bits_formatted([1, 0], -1)
 
+
     def test_grouping_partial_leading_group(self):
         bits = [1, 1, 1, 0, 1, 0, 1, 0, 1, 0]
         result = print_bits_formatted(bits, 0)
         assert result == "11_1010_1010"
 
+
     def test_grouping_odd_length(self):
         bits = [1, 0, 1, 0, 1]
         result = print_bits_formatted(bits, 0)
         assert result == "1_0101"
+
 
     def test_grouping_exact_multiple_of_four(self):
         bits = [1, 1, 1, 1, 0, 0, 0, 0]
@@ -196,6 +229,7 @@ class TestNoIntOrBinUsed:
         s = bits_to_string(bits)
         assert s == "1010"
         assert string_to_bits(s) == bits
+
 
     def test_no_bin_conversion(self):
         for i in range(16):

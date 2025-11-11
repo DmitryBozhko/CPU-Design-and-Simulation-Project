@@ -41,6 +41,7 @@ class ALU:
     _COMPARE_OPS = {"SLT", "SLTU"}
     _SHIFT_WEIGHTS = (1, 2, 4, 8, 16)
 
+
     def execute(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
         if op in self._ADD_OPS:
             return self._execute_add_sub(op, a_bits, b_bits)
@@ -51,6 +52,7 @@ class ALU:
         if op in self._COMPARE_OPS:
             return self._execute_compare(op, a_bits, b_bits)
         raise ValueError(f"Unsupported ALU operation: {op!r}")
+
 
     def _execute_add_sub(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
         width = len(a_bits)
@@ -86,6 +88,7 @@ class ALU:
             "C": carry_out & 1,
             "V": overflow & 1,
         }
+
 
     def _execute_logic(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
         width = len(a_bits)

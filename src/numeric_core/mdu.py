@@ -53,6 +53,24 @@ def _negate_twos_complement(bits: list[int]) -> list[int]:
     return _add_bits(inverted, one)
 
 
+def _is_zero_bits(bits: list[int]) -> bool:
+    for bit in bits:
+        if bit & 1:
+            return False
+    return True
+
+
+_INT_MIN_BITS32: list[int] = []
+for _ in range(31):
+    _INT_MIN_BITS32.append(0)
+_INT_MIN_BITS32.append(1)
+
+
+_INT_MINUS_ONE_BITS32: list[int] = []
+for _ in range(32):
+    _INT_MINUS_ONE_BITS32.append(1)
+
+
 class Multiplier:
     multiplicand: list[int]
     multiplier: list[int]
@@ -109,8 +127,10 @@ class Multiplier:
         if _is_non_negative_compare(cmp_result):
             self.state = "DONE"
 
+
     def is_done(self) -> bool:
         return self.state == "DONE"
+
 
     def get_product(self) -> list[int]:
         return self.accumulator[:]
@@ -195,3 +215,195 @@ def mulhsu(a_bits32: list[int], b_bits32: list[int]) -> dict:
     for idx in range(32, 64):
         high32.append(full_product[idx] & 1)
     return {"result": high32}
+
+
+class Divider:
+    dividend: list[int]
+    divisor: list[int]
+    remainder: list[int]
+    _pending_bits: list[int]
+    _quotient_msb_first: list[int]
+    step_counter: int
+    state: str
+
+
+    def __init__(self) -> None:
+        self.dividend = _zero_list(32)
+        self.divisor = _zero_list(32)
+        self.remainder = _zero_list(32)
+        self._pending_bits = []
+        self._quotient_msb_first = []
+        self.step_counter = 0
+        self.state = "IDLE"
+        self._step_history: list[dict[str, object]] = []
+
+
+    def load_operands(self, dividend_bits32: list[int], divisor_bits32: list[int]) -> None:
+        dividend = _ensure_word(dividend_bits32)
+        divisor = _ensure_word(divisor_bits32)
+        self.dividend = dividend
+        self.divisor = divisor
+        self.remainder = _zero_list(32)
+        self._pending_bits = []
+        for bit in reversed(dividend):
+            self._pending_bits.append(bit & 1)
+        self._quotient_msb_first = []
+        self._step_history = []
+        self.step_counter = 0
+        self.state = "RUN"
+
+
+    def step(self) -> None:
+        if self.state != "RUN":
+            return
+        if self._pending_bits:
+            incoming = self._pending_bits.pop(0) & 1
+        else:
+            incoming = 0
+        shifted: list[int] = [0] + self.remainder[:-1]
+        shifted[0] = incoming & 1
+        self.remainder = shifted
+        cmp_result = compare_unsigned(self.remainder, self.divisor)
+        if _is_non_negative_compare(cmp_result):
+            neg_divisor = _negate_twos_complement(self.divisor)
+            self.remainder = _add_bits(self.remainder, neg_divisor)
+            q_bit = 1
+        else:
+            q_bit = 0
+        self._quotient_msb_first.append(q_bit)
+        snapshot = {
+            "step": self.step_counter,
+            "remainder": self.remainder[:],
+            "divisor": self.divisor[:],
+            "pending_remaining": len(self._pending_bits),
+            "q_bit": q_bit,
+        }
+        self._step_history.append(snapshot)
+        self.step_counter = len(self._step_history)
+        count_bits = decimal_string_to_bits32(str(self.step_counter), False)
+        max_steps_bits = decimal_string_to_bits32("32", False)
+        cmp_steps = compare_unsigned(count_bits, max_steps_bits)
+        if _is_non_negative_compare(cmp_steps):
+            self.state = "DONE"
+
+    def is_done(self) -> bool:
+        return self.state == "DONE"
+
+    def get_quotient(self) -> list[int]:
+        bits_le = list(reversed(self._quotient_msb_first))
+        while len(bits_le) < 32:
+            bits_le.append(0)
+        return bits_le[:32]
+
+    def get_remainder(self) -> list[int]:
+        return self.remainder[:]
+
+
+def _unsigned_div_rem_32(
+    a_bits32: list[int],
+    b_bits32: list[int],
+) -> tuple[list[int], list[int]]:
+    dividend = _ensure_word(a_bits32)
+    divisor = _ensure_word(b_bits32)
+    if _is_zero_bits(divisor):
+        raise ValueError("divisor must be non zero")
+    d = Divider()
+    d.load_operands(dividend, divisor)
+    while not d.is_done():
+        d.step()
+    return d.get_quotient(), d.get_remainder()
+
+
+def _signed_div_rem_32(
+    a_bits32: list[int],
+    b_bits32: list[int],
+) -> dict:
+    dividend = _ensure_word(a_bits32)
+    divisor = _ensure_word(b_bits32)
+    if (dividend == _INT_MIN_BITS32) and (divisor == _INT_MINUS_ONE_BITS32):
+        result_remainder = _zero_list(32)
+        return {
+            "quotient": dividend[:],
+            "remainder": result_remainder,
+            "overflow": True,
+        }
+    if _is_zero_bits(divisor):
+        return {
+            "quotient": _INT_MINUS_ONE_BITS32[:],
+            "remainder": dividend[:],
+            "overflow": False,
+        }
+    sign_a = dividend[31] & 1
+    sign_b = divisor[31] & 1
+    if sign_a & 1:
+        abs_a = _negate_twos_complement(dividend)
+    else:
+        abs_a = dividend[:]
+
+    if sign_b & 1:
+        abs_b = _negate_twos_complement(divisor)
+    else:
+        abs_b = divisor[:]
+    quot_u, rem_u = _unsigned_div_rem_32(abs_a, abs_b)
+    sign_q = sign_a ^ sign_b
+    if sign_q & 1:
+        quotient_bits = _negate_twos_complement(quot_u)
+    else:
+        quotient_bits = quot_u
+    if sign_a & 1:
+        remainder_bits = _negate_twos_complement(rem_u)
+    else:
+        remainder_bits = rem_u
+
+    return {
+        "quotient": quotient_bits,
+        "remainder": remainder_bits,
+        "overflow": False,
+    }
+
+
+def div(a_bits32: list[int], b_bits32: list[int]) -> dict:
+    dividend = _ensure_word(a_bits32)
+    divisor = _ensure_word(b_bits32)
+
+    if _is_zero_bits(divisor):
+        return {
+            "quotient": _INT_MINUS_ONE_BITS32[:],
+            "remainder": dividend,
+            "overflow": False,
+        }
+
+    return _signed_div_rem_32(dividend, divisor)
+
+
+def divu(a_bits32: list[int], b_bits32: list[int]) -> dict:
+    dividend = _ensure_word(a_bits32)
+    divisor = _ensure_word(b_bits32)
+
+    if _is_zero_bits(divisor):
+        return {
+            "quotient": _INT_MINUS_ONE_BITS32[:],
+            "remainder": dividend,
+        }
+
+    quotient_bits, remainder_bits = _unsigned_div_rem_32(dividend, divisor)
+    return {"quotient": quotient_bits, "remainder": remainder_bits}
+
+
+def rem(a_bits32: list[int], b_bits32: list[int]) -> dict:
+    dividend = _ensure_word(a_bits32)
+    divisor = _ensure_word(b_bits32)
+
+    if _is_zero_bits(divisor):
+        return {"result": dividend}
+    div_result = _signed_div_rem_32(dividend, divisor)
+    return {"result": div_result["remainder"]}
+
+
+def remu(a_bits32: list[int], b_bits32: list[int]) -> dict:
+    dividend = _ensure_word(a_bits32)
+    divisor = _ensure_word(b_bits32)
+    if _is_zero_bits(divisor):
+        return {"result": dividend}
+    _, remainder_bits = _unsigned_div_rem_32(dividend, divisor)
+    return {"result": remainder_bits}
