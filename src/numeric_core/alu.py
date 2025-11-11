@@ -174,7 +174,7 @@ class ALU:
         for index in range(limit):
             if index >= len(bits):
                 break
-            bit = bits[index]
+            bit = bits[index] & 1
             if bit:
-                amount += self._SHIFT_WEIGHTS[index]
+                amount |= self._SHIFT_WEIGHTS[index]
         return amount
