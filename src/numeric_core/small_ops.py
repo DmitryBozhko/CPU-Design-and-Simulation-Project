@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from itertools import chain, islice, repeat
-
 from .adders import ripple_carry_adder
 from .shifters import shift_left_bits
 
