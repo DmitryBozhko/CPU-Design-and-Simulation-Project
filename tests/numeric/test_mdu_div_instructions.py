@@ -6,7 +6,6 @@ from src.numeric_core.mdu import div, divu, rem, remu
 
 
 def _int_to_bits32(value: int) -> list[int]:
-    """Encode a signed int as 32-bit two's-complement, little-endian bits."""
     masked = value & 0xFFFFFFFF
     bits: list[int] = []
     for idx in range(32):
@@ -15,7 +14,6 @@ def _int_to_bits32(value: int) -> list[int]:
 
 
 def _bits32_to_int_signed(bits32: list[int]) -> int:
-    """Decode little-endian 32-bit two's-complement bits to a Python int."""
     if len(bits32) < 32:
         raise ValueError("expected at least 32 bits")
     masked = 0

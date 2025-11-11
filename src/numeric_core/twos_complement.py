@@ -119,34 +119,26 @@ def negate_twos_complement(bits: list[int]) -> list[int]:
 def sign_extend(bits: list[int], from_width: int, to_width: int) -> list[int]:
     from_str = str(from_width)
     to_str = str(to_width)
-
     if from_str[0] == "-":
         raise ValueError("from_width must be non-negative")
     if to_str[0] == "-":
         raise ValueError("to_width must be greater than or equal to from_width")
-
     decimal_to_bits32 = _import_decimal_string_to_bits32()
     is_zero_compare, is_positive_compare = _import_compare_helpers()
-
     from_width_bits = decimal_to_bits32(from_str, False)
     to_width_bits = decimal_to_bits32(to_str, False)
-
     cmp_to_from = compare_unsigned(to_width_bits, from_width_bits)
     if (not is_zero_compare(cmp_to_from)) and (not is_positive_compare(cmp_to_from)):
         raise ValueError("to_width must be greater than or equal to from_width")
-
     base = _normalize_slice(bits, from_width)
     if is_zero_compare(cmp_to_from):
         return base
-
     sign_bit = 0
     if base:
         sign_bit = base[-1] & 1
-
     result: list[int] = []
     for _ in range(to_width):
         result.append(sign_bit & 1)
-
     it = iter(base)
     for index in range(from_width):
         try:
@@ -154,7 +146,6 @@ def sign_extend(bits: list[int], from_width: int, to_width: int) -> list[int]:
         except StopIteration:
             value = 0
         result[index] = value & 1
-
     return result
 
 
@@ -169,10 +160,8 @@ def zero_extend(bits: list[int], from_width: int, to_width: int) -> list[int]:
 
     decimal_to_bits32 = _import_decimal_string_to_bits32()
     is_zero_compare, is_positive_compare = _import_compare_helpers()
-
     from_width_bits = decimal_to_bits32(from_str, False)
     to_width_bits = decimal_to_bits32(to_str, False)
-
     cmp_to_from = compare_unsigned(to_width_bits, from_width_bits)
     if (not is_zero_compare(cmp_to_from)) and (not is_positive_compare(cmp_to_from)):
         raise ValueError("to_width must be greater than or equal to from_width")
@@ -214,7 +203,6 @@ def encode_twos_complement(
 
     is_32 = 0
     is_less_than_32 = 0
-    is_greater_than_32 = 0
 
     if width_str == "32":
         is_32 = 1
@@ -251,10 +239,6 @@ def encode_twos_complement(
                 "31",
             ):
                 is_less_than_32 = 1
-            else:
-                is_greater_than_32 = 1
-        else:
-            is_greater_than_32 = 1
 
     is_zero_compare, _ = _import_compare_helpers()
 

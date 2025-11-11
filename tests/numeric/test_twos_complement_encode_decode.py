@@ -9,7 +9,6 @@ from src.numeric_core.twos_complement import (
 
 
 def _signed_to_bits(value: int, width: int) -> list[int]:
-    mask = (1 << width) - 1
     return [(value >> index) & 1 for index in range(width)]
 
 

@@ -199,7 +199,6 @@ def mulhu(a_bits32: list[int], b_bits32: list[int]) -> dict:
 
 def mulhsu(a_bits32: list[int], b_bits32: list[int]) -> dict:
     a_word = _ensure_word(a_bits32)
-    b_word = _ensure_word(b_bits32)
     sign_a = a_word[31] & 1
     if sign_a & 1:
         abs_a = _negate_twos_complement(a_word)
