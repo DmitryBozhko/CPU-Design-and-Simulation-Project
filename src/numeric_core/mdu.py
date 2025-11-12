@@ -27,13 +27,29 @@ def _zero_list(length: int) -> list[int]:
 
 
 def _add_bits(a_bits: list[int], b_bits: list[int]) -> list[int]:
-    if len(a_bits) != len(b_bits):
-        raise ValueError("bit vectors must have same width")
     result: list[int] = []
     carry = 0
-    for idx in range(len(a_bits)):
-        a_bit = a_bits[idx] & 1
-        b_bit = b_bits[idx] & 1
+    it_a = iter(a_bits)
+    it_b = iter(b_bits)
+    while True:
+        a_has = 1
+        b_has = 1
+        try:
+            a_val = next(it_a)
+        except StopIteration:
+            a_val = 0
+            a_has = 0
+        try:
+            b_val = next(it_b)
+        except StopIteration:
+            b_val = 0
+            b_has = 0
+        if not ((a_has | b_has) & 1):
+            break
+        if (a_has ^ b_has) & 1:
+            raise ValueError("bit vectors must have same width")
+        a_bit = a_val & 1
+        b_bit = b_val & 1
         sum_bit = a_bit ^ b_bit ^ carry
         carry_out = (a_bit & b_bit) | (a_bit & carry) | (b_bit & carry)
         result.append(sum_bit)
@@ -289,10 +305,16 @@ class Divider:
         return self.state == "DONE"
 
     def get_quotient(self) -> list[int]:
-        bits_le = list(reversed(self._quotient_msb_first))
-        while len(bits_le) < 32:
-            bits_le.append(0)
-        return bits_le[:32]
+        bits_le_src = list(reversed(self._quotient_msb_first))
+        it = iter(bits_le_src)
+        padded: list[int] = []
+        for _ in range(32):
+            try:
+                value = next(it)
+            except StopIteration:
+                value = 0
+            padded.append(value & 1)
+        return padded
 
     def get_remainder(self) -> list[int]:
         return self.remainder[:]

@@ -5,6 +5,9 @@ from .shifter import sll, sra, srl
 from .twos_complement import negate_twos_complement
 
 
+_WORD_WIDTH = 32
+
+
 def _normalize_bits(bits: list[int]) -> list[int]:
     normalized: list[int] = []
     for bit in bits:
@@ -18,19 +21,28 @@ def _sign_bit(bits: list[int]) -> int:
     return 0
 
 
+def _resolved_width(width: int) -> int:
+    if width:
+        return width
+    return 1
+
+
 def _sign_extend(bits: list[int], width: int) -> list[int]:
-    if width <= 0:
-        return [0]
+    target_width = _resolved_width(width)
     normalized = _normalize_bits(bits)
-    length = len(normalized)
     sign = _sign_bit(normalized)
     extended: list[int] = []
-    for index in range(width):
-        if index < length:
-            extended.append(normalized[index])
-        else:
-            extended.append(sign)
+    it = iter(normalized)
+    for _ in range(target_width):
+        try:
+            value = next(it)
+        except StopIteration:
+            value = sign
+        extended.append(value & 1)
     return extended
+
+
+_COMPARISON_LESS: dict[int, int] = {-1: 1, 0: 0, 1: 0}
 
 
 class ALU:
@@ -55,12 +67,7 @@ class ALU:
 
 
     def _execute_add_sub(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
-        width = len(a_bits)
-        b_length = len(b_bits)
-        if b_length > width:
-            width = b_length
-        if width <= 0:
-            width = 1
+        width = _WORD_WIDTH
         a_aligned = _sign_extend(a_bits, width)
         b_aligned = _sign_extend(b_bits, width)
         if op == "ADD":
@@ -69,12 +76,13 @@ class ALU:
             b_operand = negate_twos_complement(b_aligned)
         result_bits, carry_out = ripple_carry_adder(a_aligned, b_operand)
         result: list[int] = []
-        length = len(result_bits)
-        for index in range(width):
-            if index < length:
-                result.append(result_bits[index] & 1)
-            else:
-                result.append(0)
+        it = iter(result_bits)
+        for _ in range(width):
+            try:
+                bit = next(it)
+            except StopIteration:
+                bit = 0
+            result.append(bit & 1)
         a_sign = _sign_bit(a_aligned)
         b_sign = _sign_bit(b_operand)
         result_sign = _sign_bit(result)
@@ -91,26 +99,22 @@ class ALU:
 
 
     def _execute_logic(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
-        width = len(a_bits)
-        b_length = len(b_bits)
-        if b_length > width and op != "NOT":
-            width = b_length
-        if width <= 0:
-            width = 1
+        width = _WORD_WIDTH
         a_aligned = _sign_extend(a_bits, width)
         if op == "NOT":
             b_aligned: list[int] | None = None
         else:
             b_aligned = _sign_extend(b_bits, width)
         result: list[int] = []
-        for index in range(width):
-            a_bit = a_aligned[index] & 1
+        idx = 0
+        for _ in range(width):
+            a_bit = a_aligned[idx] & 1
             if op == "NOT":
                 bit = (a_bit ^ 1) & 1
             else:
                 b_bit = 0
                 if b_aligned:
-                    b_bit = b_aligned[index] & 1
+                    b_bit = b_aligned[idx] & 1
                 if op == "AND":
                     bit = a_bit & b_bit
                 elif op == "OR":
@@ -118,6 +122,7 @@ class ALU:
                 else:
                     bit = (a_bit ^ b_bit) & 1
             result.append(bit)
+            idx += 1
         return {
             "result": result,
             "N": _sign_bit(result),
@@ -126,22 +131,26 @@ class ALU:
             "V": 0,
         }
 
+
     def _execute_shift(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
-        width = len(a_bits)
-        if width <= 0:
-            width = 1
+        width = _WORD_WIDTH
         operand = _sign_extend(a_bits, width)
-        shamt_bits = _normalize_bits(b_bits)[:5]
-        while len(shamt_bits) < 5:
-            shamt_bits.append(0)
-        shamt = self._shift_amount_from_bits(shamt_bits)
+        shamt = self._shift_amount_from_bits(_normalize_bits(b_bits))
         if op == "SLL":
             shifted = sll(operand, shamt)
         elif op == "SRL":
             shifted = srl(operand, shamt)
         else:
             shifted = sra(operand, shamt)
-        result = shifted[:width]
+        result: list[int] = []
+        it = iter(shifted)
+        for _ in range(width):
+            try:
+                bit = next(it)
+            except StopIteration:
+                bit = 0
+            result.append(bit & 1)
+
         return {
             "result": result,
             "N": _sign_bit(result),
@@ -155,14 +164,14 @@ class ALU:
             relation = compare_signed(a_bits, b_bits)
         else:
             relation = compare_unsigned(a_bits, b_bits)
-        less_bit = 1 if relation == -1 else 0
+        less_bit = _COMPARISON_LESS[relation]
+
         width = self._COMPARE_RESULT_WIDTH
         result: list[int] = []
-        for index in range(width):
-            if index == 0:
-                result.append(less_bit)
-            else:
-                result.append(0)
+        result.append(less_bit)
+        for _ in range(1, width):
+            result.append(0)
+
         return {
             "result": result,
             "N": _sign_bit(result),
@@ -173,11 +182,12 @@ class ALU:
 
     def _shift_amount_from_bits(self, bits: list[int]) -> int:
         amount = 0
-        limit = len(self._SHIFT_WEIGHTS)
-        for index in range(limit):
-            if index >= len(bits):
-                break
-            bit = bits[index] & 1
-            if bit:
-                amount |= self._SHIFT_WEIGHTS[index]
+        it = iter(bits)
+        for weight in self._SHIFT_WEIGHTS:
+            try:
+                bit = next(it)
+            except StopIteration:
+                bit = 0
+            if bit & 1:
+                amount |= weight
         return amount

@@ -29,17 +29,24 @@ def string_to_bits(s: str) -> list[int]:
 
 
 def print_bits_formatted(bits: list[int], width: int) -> str:
-    if width < 0:
+    width_str = str(width)
+    if width_str and width_str[0] == "-":
         raise ValueError("width must be non-negative")
     raw = bits_to_string(bits)
-    if width and len(raw) < width:
+    if width:
         raw = raw.rjust(width, "0")
+    if not raw:
+        if width:
+            return "0".rjust(width, "0")
+        return ""
     group_size = 4
-    grouped: list[str] = []
-    start = len(raw) % group_size
-    if start:
-        grouped.append(raw[:start])
-    for idx in range(start, len(raw), group_size):
-        grouped.append(raw[idx : idx + group_size])
-    formatted = "_".join(filter(None, grouped))
-    return formatted or "0" * max(width, len(raw))
+    groups: list[str] = []
+    current = ""
+    for ch in reversed(raw):
+        current = ch + current
+        if len(current) == group_size:
+            groups.insert(0, current)
+            current = ""
+    if current:
+        groups.insert(0, current)
+    return "_".join(groups)
