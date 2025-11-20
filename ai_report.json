@@ -1,0 +1,9 @@
+{
+  "total_lines": 3551,
+  "ai_tagged_lines": 521,
+  "percent": 14.7,
+  "tools": [
+    "Claude, ChatGPT, Codex(This one didn't help much)"
+  ],
+  "method": "count markers (AI-BEGIN/AI-END comments)"
+}

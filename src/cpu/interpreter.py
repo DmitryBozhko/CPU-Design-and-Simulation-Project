@@ -1,4 +1,3 @@
-# src/cpu/interpreter.py
 from __future__ import annotations
 from typing import List
 from src.cpu.alu import alu
@@ -63,7 +62,7 @@ def _bits_to_uint(bits: List[int]) -> int:
         if bits[i] & 1:
             word2 |= 1 << i
         i = i + 1
-    valid_opcodes = (0x33, 0x13, 0x03, 0x23, 0x63)
+    valid_opcodes = (0x33, 0x13, 0x03, 0x23, 0x63, 0x6F, 0x67, 0x37, 0x17)
     op1 = word1 & 0x7F
     op2 = word2 & 0x7F
     if op1 in valid_opcodes:
@@ -267,8 +266,9 @@ def step(state: CPUState, instr_bits: List[int]) -> None:
         imm_4_1 = (word >> 8) & 0xF
         imm_10_5 = (word >> 25) & 0x3F
         imm_12 = (word >> 31) & 0x1
-        imm_b = (imm_4_1 << 1) | (imm_10_5 << 5) | (imm_11 << 11) | (imm_12 << 12)
-        offset = _sign_extend(imm_b, 13) << 1
+        imm_b = (imm_12 << 12) | (imm_11 << 11) | (imm_10_5 << 5) | (imm_4_1 << 1)
+        offset = _sign_extend(imm_b, 13) 
+        
         rs1_bits = state.regs.read(rs1)
         rs2_bits = state.regs.read(rs2)
         v1 = _bits_to_uint(rs1_bits)
@@ -285,6 +285,50 @@ def step(state: CPUState, instr_bits: List[int]) -> None:
             state.pc = (state.pc + offset) & 0xFFFFFFFF
         else:
             state.pc = (state.pc + 4) & 0xFFFFFFFF
+        return
+
+
+    if opcode == 0x37:
+        imm_u = (word >> 12) & 0xFFFFF
+        result = (imm_u << 12) & 0xFFFFFFFF
+        state.regs.write(rd, _int_to_bits32(result))
+        state.pc = (state.pc + 4) & 0xFFFFFFFF
+        return
+    
+
+    if opcode == 0x17:
+        imm_u = (word >> 12) & 0xFFFFF
+        offset = (imm_u << 12) & 0xFFFFFFFF
+        result = (state.pc + offset) & 0xFFFFFFFF
+        state.regs.write(rd, _int_to_bits32(result))
+        state.pc = (state.pc + 4) & 0xFFFFFFFF
+        return
+    
+
+    if opcode == 0x6F:
+        imm_20 = (word >> 31) & 0x1
+        imm_10_1 = (word >> 21) & 0x3FF
+        imm_11 = (word >> 20) & 0x1
+        imm_19_12 = (word >> 12) & 0xFF
+        imm_j = (imm_20 << 20) | (imm_19_12 << 12) | (imm_11 << 11) | (imm_10_1 << 1)
+        offset = _sign_extend(imm_j, 21)
+        return_addr = (state.pc + 4) & 0xFFFFFFFF
+        state.regs.write(rd, _int_to_bits32(return_addr))
+        state.pc = (state.pc + offset) & 0xFFFFFFFF
+        return
+    
+
+    if opcode == 0x67:
+        if funct3 != 0x0:
+            raise NotImplementedError(
+                f"Unsupported JALR funct3: opcode=0x{opcode:02X}, funct3=0x{funct3:X}"
+            )
+        base_bits = state.regs.read(rs1)
+        base = _bits_to_uint(base_bits)
+        target = (base + imm_i) & 0xFFFFFFFE  # Clear bit 0
+        return_addr = (state.pc + 4) & 0xFFFFFFFF
+        state.regs.write(rd, _int_to_bits32(return_addr))
+        state.pc = target & 0xFFFFFFFF
         return
 
 

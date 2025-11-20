@@ -154,17 +154,14 @@ for digit_char in _DECIMAL_DIGITS:
             trimmed.append(bit & 1)
     else:
         trimmed = [0]
-
     _DECIMAL_DIGIT_BITS[digit_char] = trimmed
 
 
 _TEN_BITS = [0, 1, 0, 1]
-
 _SIGNED_MIN_MAG_BITS: list[int] = []
 for _ in range(31):
     _SIGNED_MIN_MAG_BITS.append(0)
 _SIGNED_MIN_MAG_BITS.append(1)
-
 _COMPARISON_NON_NEGATIVE: dict[int, int] = {-1: 0, 0: 1, 1: 1}
 _COMPARISON_POSITIVE: dict[int, int] = {-1: 0, 0: 0, 1: 1}
 _COMPARISON_ZERO: dict[int, int] = {-1: 0, 0: 1, 1: 0}

@@ -52,3 +52,13 @@ def sra(bits: list[int], shamt: int) -> list[int]:
     padding = _fill(sign_bit, shamt)
     trimmed.extend(padding)
     return _retain_width(trimmed, width)
+
+def shifter(bits: list[int], shamt: int, op: str) -> list[int]:
+    if op == "SLL":
+        return sll(bits, shamt)
+    elif op == "SRL":
+        return srl(bits, shamt)
+    elif op == "SRA":
+        return sra(bits, shamt)
+    else:
+        raise ValueError(f"Unknown shift operation: {op}")
