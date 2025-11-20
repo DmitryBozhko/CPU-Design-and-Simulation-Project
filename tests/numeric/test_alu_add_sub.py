@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from src.numeric_core.alu import ALU
 
 
@@ -27,7 +26,6 @@ def _execute(op: str, a: int, b: int) -> dict:
 
 def test_add_overflow_sets_flags() -> None:
     result = _execute("ADD", 0x7FFFFFFF, 0x00000001)
-
     assert _bits_to_int(result["result"]) == 0x80000000
     assert result["N"] == 1
     assert result["Z"] == 0
@@ -37,7 +35,6 @@ def test_add_overflow_sets_flags() -> None:
 
 def test_subtract_with_borrow_sets_flags() -> None:
     result = _execute("SUB", 0x80000000, 0x00000001)
-
     assert _bits_to_int(result["result"]) == 0x7FFFFFFF
     assert result["N"] == 0
     assert result["Z"] == 0
@@ -47,7 +44,6 @@ def test_subtract_with_borrow_sets_flags() -> None:
 
 def test_add_negative_values_sets_expected_flags() -> None:
     result = _execute("ADD", -1, -1)
-
     assert _bits_to_int(result["result"]) == 0xFFFFFFFE
     assert result["N"] == 1
     assert result["Z"] == 0

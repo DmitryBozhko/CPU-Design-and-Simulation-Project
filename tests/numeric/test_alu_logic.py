@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from src.numeric_core.alu import ALU
 
 
@@ -27,7 +26,6 @@ def _execute(op: str, a: int, b: int = 0) -> dict:
 
 def test_and_clears_bits() -> None:
     result = _execute("AND", 0xAAAAAAAA, 0x55555555)
-
     assert _bits_to_int(result["result"]) == 0x00000000
     assert result["N"] == 0
     assert result["Z"] == 1
@@ -37,7 +35,6 @@ def test_and_clears_bits() -> None:
 
 def test_or_sets_all_bits() -> None:
     result = _execute("OR", 0xAAAAAAAA, 0x55555555)
-
     assert _bits_to_int(result["result"]) == 0xFFFFFFFF
     assert result["N"] == 1
     assert result["Z"] == 0
@@ -47,7 +44,6 @@ def test_or_sets_all_bits() -> None:
 
 def test_xor_with_same_operands_is_zero() -> None:
     result = _execute("XOR", 0xDEADBEEF, 0xDEADBEEF)
-
     assert _bits_to_int(result["result"]) == 0
     assert result["N"] == 0
     assert result["Z"] == 1
@@ -57,7 +53,6 @@ def test_xor_with_same_operands_is_zero() -> None:
 
 def test_not_inverts_bits() -> None:
     result = _execute("NOT", 0x00000000)
-
     assert _bits_to_int(result["result"]) == 0xFFFFFFFF
     assert result["N"] == 1
     assert result["Z"] == 0

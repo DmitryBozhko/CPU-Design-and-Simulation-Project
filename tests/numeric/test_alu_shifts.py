@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from src.numeric_core.alu import ALU
 
 
@@ -22,9 +21,7 @@ def test_sll_matches_manual_shifter() -> None:
     alu = ALU()
     a_bits = int_to_bits(0x00000001, 32)
     b_bits = int_to_bits(0x00000004, 32)
-
     result = alu.execute("SLL", a_bits, b_bits)
-
     assert bits_to_int(result["result"]) == 0x00000010
     assert len(result["result"]) == 32
 
@@ -33,9 +30,7 @@ def test_srl_matches_manual_shifter() -> None:
     alu = ALU()
     a_bits = int_to_bits(0x80000000, 32)
     b_bits = int_to_bits(0x00000001, 32)
-
     result = alu.execute("SRL", a_bits, b_bits)
-
     assert bits_to_int(result["result"]) == 0x40000000
     assert len(result["result"]) == 32
 
@@ -44,9 +39,7 @@ def test_sra_matches_manual_shifter() -> None:
     alu = ALU()
     a_bits = int_to_bits(0x80000000, 32)
     b_bits = int_to_bits(0x00000001, 32)
-
     result = alu.execute("SRA", a_bits, b_bits)
-
     assert bits_to_int(result["result"]) == 0xC0000000
     assert len(result["result"]) == 32
 
@@ -54,10 +47,7 @@ def test_sra_matches_manual_shifter() -> None:
 def test_shift_amount_uses_lower_five_bits_only() -> None:
     alu = ALU()
     a_bits = int_to_bits(0x00000001, 32)
-    # 0b100100 has lower five bits equal to 0b00100 (shift by 4)
     b_bits = int_to_bits(0b100100, 32)
-
     result = alu.execute("SLL", a_bits, b_bits)
-
     assert bits_to_int(result["result"]) == 0x00000010
     assert len(result["result"]) == 32

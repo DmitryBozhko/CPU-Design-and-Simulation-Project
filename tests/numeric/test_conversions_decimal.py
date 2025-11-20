@@ -1,5 +1,4 @@
 import pytest
-
 from src.numeric_core.conversions import (
     bits32_to_decimal_string,
     decimal_string_to_bits32,

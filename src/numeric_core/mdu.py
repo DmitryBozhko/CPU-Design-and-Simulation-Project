@@ -1,9 +1,22 @@
-from __future__ import annotations
-from .conversions import (
-    decimal_string_to_bits32,
-    compare_unsigned,
-    _is_non_negative_compare,
-)
+from .conversions import decimal_string_to_bits32, _is_non_negative_compare
+from .comparators import compare_unsigned
+from typing import TypedDict
+
+#AI-BEGIN
+class MultiplierTraceEntry(TypedDict):
+    step: int
+    accumulator: list[int]
+    multiplicand: list[int]
+    multiplier: list[int]
+
+
+class DividerTraceEntry(TypedDict):
+    step: int
+    remainder: list[int]
+    divisor: list[int]
+    pending_remaining: int
+    q_bit: int
+#AI_END
 
 
 def _ensure_word(bits32: list[int]) -> list[int]:
@@ -76,6 +89,7 @@ def _is_zero_bits(bits: list[int]) -> bool:
     return True
 
 
+#AI-BEGIN
 _INT_MIN_BITS32: list[int] = []
 for _ in range(31):
     _INT_MIN_BITS32.append(0)
@@ -85,6 +99,7 @@ _INT_MIN_BITS32.append(1)
 _INT_MINUS_ONE_BITS32: list[int] = []
 for _ in range(32):
     _INT_MINUS_ONE_BITS32.append(1)
+#AI-END
 
 
 class Multiplier:
@@ -93,15 +108,19 @@ class Multiplier:
     accumulator: list[int]
     step_counter: int
     state: str
+
     def __init__(self) -> None:
         self.multiplicand = _zero_list(64)
         self.multiplier = _zero_list(32)
         self.accumulator = _zero_list(64)
         self.state = "IDLE"
         self.step_counter = 0
-        self._step_history: list[dict[str, object]] = []
+        self._step_history: list[MultiplierTraceEntry] = []
+
     def load_operands(self, a_bits32: list[int], b_bits32: list[int]) -> None:
+        #AI-BEGIN
         """Load 32-bit operands for an unsigned 32×32 → 64 multiply."""
+        #AI-END
         multiplicand32 = _ensure_word(a_bits32)
         multiplier32 = _ensure_word(b_bits32)
         new_multiplicand = _zero_list(64)
@@ -113,7 +132,6 @@ class Multiplier:
         self._step_history = []
         self.step_counter = 0
         self.state = "RUN"
-
 
     def step(self) -> None:
         if self.state != "RUN":
@@ -129,7 +147,7 @@ class Multiplier:
         else:
             new_multiplier = _zero_list(32)
         self.multiplier = new_multiplier
-        snapshot = {
+        snapshot: MultiplierTraceEntry = {
             "step": self.step_counter,
             "accumulator": self.accumulator[:],
             "multiplicand": self.multiplicand[:],
@@ -143,24 +161,39 @@ class Multiplier:
         if _is_non_negative_compare(cmp_result):
             self.state = "DONE"
 
-
     def is_done(self) -> bool:
         return self.state == "DONE"
-
 
     def get_product(self) -> list[int]:
         return self.accumulator[:]
 
+    def get_trace(self) -> list[MultiplierTraceEntry]:
+        trace: list[MultiplierTraceEntry] = []
+        for entry in self._step_history:
+            trace.append(
+                {
+                    "step": entry["step"],
+                    "accumulator": entry["accumulator"][:],
+                    "multiplicand": entry["multiplicand"][:],
+                    "multiplier": entry["multiplier"][:],
+                }
+            )
+        return trace
 
-def _multiply_unsigned_32x32(a_bits32: list[int], b_bits32: list[int]) -> list[int]:
+
+def _multiply_unsigned_32x32(
+    a_bits32: list[int], b_bits32: list[int]
+) -> tuple[list[int], list[MultiplierTraceEntry]]:
     m = Multiplier()
     m.load_operands(a_bits32, b_bits32)
     while not m.is_done():
         m.step()
-    return m.get_product()
+    return m.get_product(), m.get_trace()
 
 
-def _signed_product_64(a_bits32: list[int], b_bits32: list[int]) -> list[int]:
+def _signed_product_64(
+    a_bits32: list[int], b_bits32: list[int]
+) -> tuple[list[int], list[MultiplierTraceEntry]]:
     a_word = _ensure_word(a_bits32)
     b_word = _ensure_word(b_bits32)
     sign_a = a_word[31] & 1
@@ -173,15 +206,17 @@ def _signed_product_64(a_bits32: list[int], b_bits32: list[int]) -> list[int]:
         abs_b = _negate_twos_complement(b_word)
     else:
         abs_b = b_word[:]
-    unsigned_product = _multiply_unsigned_32x32(abs_a, abs_b)
+    unsigned_product, trace = _multiply_unsigned_32x32(abs_a, abs_b)
     sign_result = sign_a ^ sign_b
     if sign_result & 1:
-        return _negate_twos_complement(unsigned_product)
-    return unsigned_product
+        return _negate_twos_complement(unsigned_product), trace
+    return unsigned_product, trace
 
 
-def mul(a_bits32: list[int], b_bits32: list[int]) -> dict:
-    full_product = _signed_product_64(a_bits32, b_bits32)
+def mul(
+    a_bits32: list[int], b_bits32: list[int]
+) -> tuple[list[int], bool, list[MultiplierTraceEntry]]:
+    full_product, trace = _signed_product_64(a_bits32, b_bits32)
     low32: list[int] = []
     for idx in range(32):
         low32.append(full_product[idx] & 1)
@@ -192,28 +227,34 @@ def mul(a_bits32: list[int], b_bits32: list[int]) -> dict:
         if bit ^ sign_bit:
             overflow_flag = 1
             break
-    return {"result": low32, "overflow": bool(overflow_flag)}
+    return low32, bool(overflow_flag), trace
 
 
-def mulh(a_bits32: list[int], b_bits32: list[int]) -> dict:
-    full_product = _signed_product_64(a_bits32, b_bits32)
+def mulh(
+    a_bits32: list[int], b_bits32: list[int]
+) -> tuple[list[int], bool, list[MultiplierTraceEntry]]:
+    full_product, trace = _signed_product_64(a_bits32, b_bits32)
     high32: list[int] = []
     for idx in range(32, 64):
         high32.append(full_product[idx] & 1)
-    return {"result": high32}
+    return high32, False, trace
 
 
-def mulhu(a_bits32: list[int], b_bits32: list[int]) -> dict:
+def mulhu(
+    a_bits32: list[int], b_bits32: list[int]
+) -> tuple[list[int], bool, list[MultiplierTraceEntry]]:
     a_word = _ensure_word(a_bits32)
     b_word = _ensure_word(b_bits32)
-    full_product = _multiply_unsigned_32x32(a_word, b_word)
+    full_product, trace = _multiply_unsigned_32x32(a_word, b_word)
     high32: list[int] = []
     for idx in range(32, 64):
         high32.append(full_product[idx] & 1)
-    return {"result": high32}
+    return high32, False, trace
 
 
-def mulhsu(a_bits32: list[int], b_bits32: list[int]) -> dict:
+def mulhsu(
+    a_bits32: list[int], b_bits32: list[int]
+) -> tuple[list[int], bool, list[MultiplierTraceEntry]]:
     a_word = _ensure_word(a_bits32)
     sign_a = a_word[31] & 1
     if sign_a & 1:
@@ -221,7 +262,7 @@ def mulhsu(a_bits32: list[int], b_bits32: list[int]) -> dict:
     else:
         abs_a = a_word[:]
     abs_b = _ensure_word(b_bits32)
-    unsigned_product = _multiply_unsigned_32x32(abs_a, abs_b)
+    unsigned_product, trace = _multiply_unsigned_32x32(abs_a, abs_b)
     if sign_a & 1:
         full_product = _negate_twos_complement(unsigned_product)
     else:
@@ -229,7 +270,7 @@ def mulhsu(a_bits32: list[int], b_bits32: list[int]) -> dict:
     high32: list[int] = []
     for idx in range(32, 64):
         high32.append(full_product[idx] & 1)
-    return {"result": high32}
+    return high32, False, trace
 
 
 class Divider:
@@ -241,7 +282,6 @@ class Divider:
     step_counter: int
     state: str
 
-
     def __init__(self) -> None:
         self.dividend = _zero_list(32)
         self.divisor = _zero_list(32)
@@ -250,10 +290,11 @@ class Divider:
         self._quotient_msb_first = []
         self.step_counter = 0
         self.state = "IDLE"
-        self._step_history: list[dict[str, object]] = []
+        self._step_history: list[DividerTraceEntry] = []
 
-
-    def load_operands(self, dividend_bits32: list[int], divisor_bits32: list[int]) -> None:
+    def load_operands(
+        self, dividend_bits32: list[int], divisor_bits32: list[int]
+    ) -> None:
         dividend = _ensure_word(dividend_bits32)
         divisor = _ensure_word(divisor_bits32)
         self.dividend = dividend
@@ -266,7 +307,6 @@ class Divider:
         self._step_history = []
         self.step_counter = 0
         self.state = "RUN"
-
 
     def step(self) -> None:
         if self.state != "RUN":
@@ -286,7 +326,7 @@ class Divider:
         else:
             q_bit = 0
         self._quotient_msb_first.append(q_bit)
-        snapshot = {
+        snapshot: DividerTraceEntry = {
             "step": self.step_counter,
             "remainder": self.remainder[:],
             "divisor": self.divisor[:],
@@ -319,11 +359,27 @@ class Divider:
     def get_remainder(self) -> list[int]:
         return self.remainder[:]
 
+#AI-BEGIN
+    def get_trace(self) -> list[DividerTraceEntry]:
+        trace: list[DividerTraceEntry] = []
+        for entry in self._step_history:
+            trace.append(
+                {
+                    "step": entry["step"],
+                    "remainder": entry["remainder"][:],
+                    "divisor": entry["divisor"][:],
+                    "pending_remaining": entry["pending_remaining"],
+                    "q_bit": entry["q_bit"],
+                }
+            )
+        return trace
+#AI-END
+
 
 def _unsigned_div_rem_32(
     a_bits32: list[int],
     b_bits32: list[int],
-) -> tuple[list[int], list[int]]:
+) -> tuple[list[int], list[int], list[DividerTraceEntry]]:
     dividend = _ensure_word(a_bits32)
     divisor = _ensure_word(b_bits32)
     if _is_zero_bits(divisor):
@@ -332,40 +388,31 @@ def _unsigned_div_rem_32(
     d.load_operands(dividend, divisor)
     while not d.is_done():
         d.step()
-    return d.get_quotient(), d.get_remainder()
+    return d.get_quotient(), d.get_remainder(), d.get_trace()
 
 
 def _signed_div_rem_32(
     a_bits32: list[int],
     b_bits32: list[int],
-) -> dict:
+) -> tuple[list[int], list[int], bool, list[DividerTraceEntry]]:
     dividend = _ensure_word(a_bits32)
     divisor = _ensure_word(b_bits32)
     if (dividend == _INT_MIN_BITS32) and (divisor == _INT_MINUS_ONE_BITS32):
         result_remainder = _zero_list(32)
-        return {
-            "quotient": dividend[:],
-            "remainder": result_remainder,
-            "overflow": True,
-        }
+        return dividend[:], result_remainder, True, []
     if _is_zero_bits(divisor):
-        return {
-            "quotient": _INT_MINUS_ONE_BITS32[:],
-            "remainder": dividend[:],
-            "overflow": False,
-        }
+        return _INT_MINUS_ONE_BITS32[:], dividend[:], False, []
     sign_a = dividend[31] & 1
     sign_b = divisor[31] & 1
     if sign_a & 1:
         abs_a = _negate_twos_complement(dividend)
     else:
         abs_a = dividend[:]
-
     if sign_b & 1:
         abs_b = _negate_twos_complement(divisor)
     else:
         abs_b = divisor[:]
-    quot_u, rem_u = _unsigned_div_rem_32(abs_a, abs_b)
+    quot_u, rem_u, trace = _unsigned_div_rem_32(abs_a, abs_b)
     sign_q = sign_a ^ sign_b
     if sign_q & 1:
         quotient_bits = _negate_twos_complement(quot_u)
@@ -376,55 +423,47 @@ def _signed_div_rem_32(
     else:
         remainder_bits = rem_u
 
-    return {
-        "quotient": quotient_bits,
-        "remainder": remainder_bits,
-        "overflow": False,
-    }
+    return quotient_bits, remainder_bits, False, trace
 
 
-def div(a_bits32: list[int], b_bits32: list[int]) -> dict:
+def div(
+    a_bits32: list[int], b_bits32: list[int]
+) -> tuple[list[int], list[int], bool, list[DividerTraceEntry]]:
     dividend = _ensure_word(a_bits32)
     divisor = _ensure_word(b_bits32)
-
-    if _is_zero_bits(divisor):
-        return {
-            "quotient": _INT_MINUS_ONE_BITS32[:],
-            "remainder": dividend,
-            "overflow": False,
-        }
-
     return _signed_div_rem_32(dividend, divisor)
 
 
-def divu(a_bits32: list[int], b_bits32: list[int]) -> dict:
-    dividend = _ensure_word(a_bits32)
-    divisor = _ensure_word(b_bits32)
-
-    if _is_zero_bits(divisor):
-        return {
-            "quotient": _INT_MINUS_ONE_BITS32[:],
-            "remainder": dividend,
-        }
-
-    quotient_bits, remainder_bits = _unsigned_div_rem_32(dividend, divisor)
-    return {"quotient": quotient_bits, "remainder": remainder_bits}
-
-
-def rem(a_bits32: list[int], b_bits32: list[int]) -> dict:
-    dividend = _ensure_word(a_bits32)
-    divisor = _ensure_word(b_bits32)
-
-    if _is_zero_bits(divisor):
-        return {"result": dividend}
-    div_result = _signed_div_rem_32(dividend, divisor)
-    return {"result": div_result["remainder"]}
-
-
-def remu(a_bits32: list[int], b_bits32: list[int]) -> dict:
+def divu(
+    a_bits32: list[int], b_bits32: list[int]
+) -> tuple[list[int], list[int], bool, list[DividerTraceEntry]]:
     dividend = _ensure_word(a_bits32)
     divisor = _ensure_word(b_bits32)
     if _is_zero_bits(divisor):
-        return {"result": dividend}
-    _, remainder_bits = _unsigned_div_rem_32(dividend, divisor)
-    return {"result": remainder_bits}
+        return _INT_MINUS_ONE_BITS32[:], dividend, False, []
+    quotient_bits, remainder_bits, trace = _unsigned_div_rem_32(dividend, divisor)
+    return quotient_bits, remainder_bits, False, trace
+
+
+def rem(
+    a_bits32: list[int], b_bits32: list[int]
+) -> tuple[list[int], bool, list[DividerTraceEntry]]:
+    dividend = _ensure_word(a_bits32)
+    divisor = _ensure_word(b_bits32)
+    if _is_zero_bits(divisor):
+        return dividend, False, []
+    quotient_bits, remainder_bits, overflow, trace = _signed_div_rem_32(
+        dividend, divisor
+    )
+    return remainder_bits, overflow, trace
+
+
+def remu(
+    a_bits32: list[int], b_bits32: list[int]
+) -> tuple[list[int], bool, list[DividerTraceEntry]]:
+    dividend = _ensure_word(a_bits32)
+    divisor = _ensure_word(b_bits32)
+    if _is_zero_bits(divisor):
+        return dividend, False, []
+    _, remainder_bits, trace = _unsigned_div_rem_32(dividend, divisor)
+    return remainder_bits, False, trace

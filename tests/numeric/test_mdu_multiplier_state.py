@@ -1,3 +1,4 @@
+# AI-BEGIN
 from __future__ import annotations
 
 from src.numeric_core.mdu import Multiplier
@@ -132,3 +133,6 @@ def test_unsigned_multiply_all_ones_matches_python() -> None:
     assert product_int == expected
     # Optional sanity: full 64-bit pattern equality check
     assert product_bits == _int_to_bits64_le(expected)
+
+
+# AI-END

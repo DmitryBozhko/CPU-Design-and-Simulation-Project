@@ -71,18 +71,11 @@ def main() -> None:
         f"  8-bit [1,0,1,0,1,0,1,0]: "
         f"{print_bits_formatted([1, 0, 1, 0, 1, 0, 1, 0], 8)}"
     )
+    print(f"  4-bit [1,1,1,1]: {print_bits_formatted([1, 1, 1, 1], 4)}")
     print(
-        f"  4-bit [1,1,1,1]: "
-        f"{print_bits_formatted([1, 1, 1, 1], 4)}"
+        f"  5-bit [1,0,1,0,1] (no padding): {print_bits_formatted([1, 0, 1, 0, 1], 0)}"
     )
-    print(
-        f"  5-bit [1,0,1,0,1] (no padding): "
-        f"{print_bits_formatted([1, 0, 1, 0, 1], 0)}"
-    )
-    print(
-        f"  3-bit [1,0,1] padded to 8: "
-        f"{print_bits_formatted([1, 0, 1], 8)}"
-    )
+    print(f"  3-bit [1,0,1] padded to 8: {print_bits_formatted([1, 0, 1], 8)}")
     print(
         "  10-bit partial group: "
         f"{print_bits_formatted([1, 1, 1, 0, 1, 0, 1, 0, 1, 0], 0)}"

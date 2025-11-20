@@ -3,7 +3,7 @@ from .adders import ripple_carry_adder
 from .comparators import compare_unsigned, is_zero
 from .twos_complement import negate_twos_complement
 
-
+#AI-BEGIN
 _HEX_CHARS = (
     ("0", [0, 0, 0, 0]),
     ("1", [1, 0, 0, 0]),
@@ -22,6 +22,7 @@ _HEX_CHARS = (
     ("E", [0, 1, 1, 1]),
     ("F", [1, 1, 1, 1]),
 )
+#AI-END
 
 _HEX_TO_BITS: dict[str, list[int]] = {}
 _BITS_TO_HEX: dict[tuple[int, int, int, int], str] = {}
@@ -33,24 +34,33 @@ for char, bits in _HEX_CHARS:
 
 
 def _ensure_nibble(bits4: list[int]) -> None:
+    # AI-BEGIN
+    """Validate that a list contains exactly 4 bits."""
+    # AI-END
     try:
         bits4[3]
-    except IndexError as exc:  # pragma: no cover - defensive
+    except IndexError as exc:  #AI-BEGIN # pragma: no cover - defensive #AI-END
         raise ValueError("nibble must contain 4 bits") from exc
     if bits4[4:]:
         raise ValueError("nibble must contain exactly 4 bits")
 
 
 def _ensure_word(bits32: list[int]) -> None:
+    # AI-BEGIN
+    """Validate that a list contains exactly 32 bits."""
+    # AI-END
     try:
         bits32[31]
-    except IndexError as exc:  # pragma: no cover - defensive
+    except IndexError as exc:  #AI-BEGIN # pragma: no cover - defensive #AI-END
         raise ValueError("word must contain 32 bits") from exc
     if bits32[32:]:
         raise ValueError("word must contain exactly 32 bits")
 
 
 def _normalize_bits(bits: list[int]) -> list[int]:
+    # AI-BEGIN
+    """Normalize arbitrary integers into 0/1 bit values."""
+    # AI-END
     normalized: list[int] = []
     for bit in bits:
         normalized.append(bit & 1)
@@ -58,6 +68,9 @@ def _normalize_bits(bits: list[int]) -> list[int]:
 
 
 def hex_char_to_nibble(c: str) -> list[int]:
+    # AI-BEGIN
+    """Decode a single hex character into a 4-bit list."""
+    # AI-END
     if not c:
         raise ValueError("hex character is required")
     if c[1:]:
@@ -69,16 +82,22 @@ def hex_char_to_nibble(c: str) -> list[int]:
 
 
 def nibble_to_hex_char(bits4: list[int]) -> str:
+    # AI-BEGIN
+    """Convert a 4-bit list into its hex character."""
+    # AI-END
     _ensure_nibble(bits4)
     normalized = _normalize_bits(bits4[:4])
     key = (normalized[0], normalized[1], normalized[2], normalized[3])
     char = _BITS_TO_HEX.get(key)
-    if char is None:  # pragma: no cover - defensive
+    if char is None:  #AI-BEGIN # pragma: no cover - defensive #AI-END
         raise ValueError(f"Invalid nibble: {bits4!r}")
     return char
 
 
 def bits32_to_hex(bits32: list[int]) -> str:
+    # AI-BEGIN
+    """Encode a 32-bit vector into an 8-character hex string."""
+    # AI-END
     _ensure_word(bits32)
     nibbles = (
         bits32[0:4],
@@ -97,6 +116,9 @@ def bits32_to_hex(bits32: list[int]) -> str:
 
 
 def hex_to_bits32(hex_str: str) -> list[int]:
+    # AI-BEGIN
+    """Parse an up-to-8-digit hex string into 32 bits."""
+    # AI-END
     if hex_str is None:
         raise ValueError("hex string is required")
     cleaned = hex_str.strip()
@@ -149,18 +171,30 @@ _COMPARISON_ZERO: dict[int, int] = {-1: 0, 0: 1, 1: 0}
 
 
 def _is_non_negative_compare(result: int) -> bool:
+    # AI-BEGIN
+    """Return True if a comparator result is >= 0."""
+    # AI-END
     return bool(_COMPARISON_NON_NEGATIVE[result])
 
 
 def _is_positive_compare(result: int) -> bool:
+    # AI-BEGIN
+    """Return True if a comparator result is > 0."""
+    # AI-END
     return bool(_COMPARISON_POSITIVE[result])
 
 
 def _is_zero_compare(result: int) -> bool:
+    # AI-BEGIN
+    """Return True if a comparator result is == 0."""
+    # AI-END
     return bool(_COMPARISON_ZERO[result])
 
 
 def _normalize_word(bits32: list[int]) -> list[int]:
+    # AI-BEGIN
+    """Normalize a 32-bit input ensuring only 0/1 values."""
+    # AI-END
     _ensure_word(bits32)
     normalized: list[int] = []
     for index in range(32):
@@ -169,6 +203,9 @@ def _normalize_word(bits32: list[int]) -> list[int]:
 
 
 def _normalize_bits_nonempty(bits: list[int]) -> list[int]:
+    # AI-BEGIN
+    """Normalize bits and guarantee at least one element."""
+    # AI-END
     normalized = _normalize_bits(bits)
     if not normalized:
         normalized.append(0)
@@ -176,6 +213,9 @@ def _normalize_bits_nonempty(bits: list[int]) -> list[int]:
 
 
 def _fixed_width(bits: list[int], width: int) -> list[int]:
+    # AI-BEGIN
+    """Pad or truncate a bit list to a fixed width."""
+    # AI-END
     fixed: list[int] = []
     it = iter(bits)
     for _ in range(width):
@@ -188,6 +228,9 @@ def _fixed_width(bits: list[int], width: int) -> list[int]:
 
 
 def _highest_bit_index(bits: list[int]) -> int:
+    # AI-BEGIN
+    """Return the highest index containing a 1 bit, or -1 if none."""
+    # AI-END
     highest = ~0
     for index, value in enumerate(bits):
         if value & 1:
@@ -196,6 +239,9 @@ def _highest_bit_index(bits: list[int]) -> int:
 
 
 def _shift_left(bits: list[int], amount: int) -> list[int]:
+    # AI-BEGIN
+    """Shift a bit vector left by inserting zeros on the LSB side."""
+    # AI-END
     shifted: list[int] = []
     for _ in range(amount):
         shifted.append(0)
@@ -205,6 +251,9 @@ def _shift_left(bits: list[int], amount: int) -> list[int]:
 
 
 def _subtract_unsigned(a_bits: list[int], b_bits: list[int]) -> list[int]:
+    # AI-BEGIN
+    """Unsigned subtraction of equal-width bit vectors."""
+    # AI-END
     padded_a: list[int] = []
     padded_b: list[int] = []
     it_a = iter(a_bits)
@@ -237,6 +286,9 @@ def _subtract_unsigned(a_bits: list[int], b_bits: list[int]) -> list[int]:
 def _unsigned_divide(
     dividend_bits: list[int], divisor_bits: list[int]
 ) -> tuple[list[int], list[int]]:
+    # AI-BEGIN
+    """Divide two unsigned bit vectors, returning quotient and remainder."""
+    # AI-END
     normalized_dividend = _fixed_width(dividend_bits, len(dividend_bits))
     normalized_divisor = _normalize_bits_nonempty(divisor_bits)
     if is_zero(normalized_divisor):
@@ -263,6 +315,9 @@ def _unsigned_divide(
 
 
 def _digit_bits_from_char(char: str) -> list[int]:
+    # AI-BEGIN
+    """Lookup bit pattern representing a decimal digit."""
+    # AI-END
     bits = _DECIMAL_DIGIT_BITS.get(char)
     if bits is None:
         raise ValueError(f"Invalid decimal digit: {char!r}")
@@ -270,6 +325,9 @@ def _digit_bits_from_char(char: str) -> list[int]:
 
 
 def _digit_char_from_bits(bits: list[int]) -> str:
+    # AI-BEGIN
+    """Convert a bit pattern back into a decimal digit character."""
+    # AI-END
     for char in _DECIMAL_DIGITS:
         reference = _DECIMAL_DIGIT_BITS[char]
         if _is_zero_compare(compare_unsigned(bits, reference)):
@@ -278,6 +336,9 @@ def _digit_char_from_bits(bits: list[int]) -> str:
 
 
 def _parse_decimal_string(s: str) -> tuple[str, bool]:
+    # AI-BEGIN
+    """Strip and validate a decimal string, returning digits and sign."""
+    # AI-END
     if s is None:
         raise ValueError("decimal string is required")
     stripped = s.strip()
@@ -306,6 +367,9 @@ def _parse_decimal_string(s: str) -> tuple[str, bool]:
 def _add_within_width(
     a_bits: list[int], b_bits: list[int], width: int
 ) -> tuple[list[int], int]:
+    # AI-BEGIN
+    """Add two bit vectors with fixed width, returning result and overflow."""
+    # AI-END
     padded_a = _fixed_width(a_bits, width)
     padded_b = _fixed_width(b_bits, width)
     summed, carry = ripple_carry_adder(padded_a, padded_b)
@@ -315,6 +379,9 @@ def _add_within_width(
 
 
 def _multiply_bits_by_ten(bits: list[int], width: int) -> tuple[list[int], int]:
+    # AI-BEGIN
+    """Multiply a bit vector by ten using repeated addition."""
+    # AI-END
     result: list[int] = []
     for _ in range(width):
         result.append(0 & 1)
@@ -328,6 +395,9 @@ def _multiply_bits_by_ten(bits: list[int], width: int) -> tuple[list[int], int]:
 
 
 def _unsigned_bits_to_decimal_string(bits: list[int]) -> str:
+    # AI-BEGIN
+    """Convert an unsigned bit vector into its decimal string."""
+    # AI-END
     current = _fixed_width(bits, len(bits))
     if is_zero(current):
         return "0"
@@ -341,6 +411,9 @@ def _unsigned_bits_to_decimal_string(bits: list[int]) -> str:
 
 
 def bits32_to_decimal_string(bits32: list[int], signed: bool) -> str:
+    # AI-BEGIN
+    """Render a 32-bit word as decimal, respecting signedness."""
+    # AI-END
     normalized = _normalize_word(bits32)
     if signed and normalized[31]:
         magnitude = negate_twos_complement(normalized)
@@ -350,6 +423,9 @@ def bits32_to_decimal_string(bits32: list[int], signed: bool) -> str:
 
 
 def decimal_string_to_bits32(s: str, signed: bool) -> list[int]:
+    # AI-BEGIN
+    """Parse a decimal string into 32-bit two's-complement bits."""
+    # AI-END
     digits, negative_input = _parse_decimal_string(s)
     width = 32
     accumulator: list[int] = []

@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-
 from .adders import ripple_carry_adder
 from .small_ops import _fixed_width
 from .comparators import compare_signed, compare_unsigned
 
+# AI-BEGIN
 if TYPE_CHECKING:  # pragma: no cover - typing helper
     from .conversions import (
         bits32_to_decimal_string,
@@ -17,22 +17,29 @@ if TYPE_CHECKING:  # pragma: no cover - typing helper
 
 def _import_decimal_string_to_bits32() -> "decimal_string_to_bits32":
     from .conversions import decimal_string_to_bits32
+
     return decimal_string_to_bits32
 
 
 def _import_bits32_to_hex() -> "bits32_to_hex":
     from .conversions import bits32_to_hex
+
     return bits32_to_hex
 
 
 def _import_bits32_to_decimal_string() -> "bits32_to_decimal_string":
     from .conversions import bits32_to_decimal_string
+
     return bits32_to_decimal_string
 
 
 def _import_compare_helpers() -> tuple["_is_zero_compare", "_is_positive_compare"]:
     from .conversions import _is_zero_compare, _is_positive_compare
+
     return _is_zero_compare, _is_positive_compare
+
+
+# AI-END
 
 
 def _zero_bits(width: int) -> list[int]:
@@ -188,9 +195,7 @@ def _convert_value_to_bits32(value_str: str) -> tuple[list[int], bool]:
         return magnitude, overflow
 
 
-def encode_twos_complement(
-    value: int, width: int = 32
-) -> tuple[list[int], str, bool]:
+def encode_twos_complement(value: int, width: int = 32) -> tuple[list[int], str, bool]:
     width_str = str(width)
     if (not width) or (width_str[0] == "-"):
         raise ValueError("width must be positive")
@@ -255,14 +260,19 @@ def encode_twos_complement(
     return result_bits, hex_string, overflow
 
 
-def decode_twos_complement(bits: list[int]) -> int:
+#AI-BEGIN
+def decode_twos_complement(bits: list[int]) -> str:
+    #AI-END
     if not bits:
-        return 0
+        #AI-BEGIN
+        return "0"
+        #AI-END
     try:
         _ = bits[31]
         normalized = _normalize_slice(bits, 32)
     except IndexError:
         normalized = sign_extend(bits, len(bits), 32)
     decimal_converter = _import_bits32_to_decimal_string()
-    decimal_string = decimal_converter(normalized, True)
-    return int(decimal_string)
+    #AI-BEGIN
+    return decimal_converter(normalized, True)
+    #AI-END

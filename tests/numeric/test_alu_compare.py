@@ -27,7 +27,6 @@ def _execute(op: str, a: int, b: int) -> dict:
 
 def test_slt_sets_one_when_less_than() -> None:
     result = _execute("SLT", 5, 10)
-
     assert _bits_to_int(result["result"]) == 1
     assert result["N"] == 0
     assert result["Z"] == 0
@@ -35,27 +34,23 @@ def test_slt_sets_one_when_less_than() -> None:
 
 def test_slt_clears_result_when_not_less() -> None:
     result = _execute("SLT", 10, 5)
-
     assert _bits_to_int(result["result"]) == 0
     assert result["Z"] == 1
 
 
 def test_slt_handles_negative_operands() -> None:
     result = _execute("SLT", -1, 0)
-
     assert _bits_to_int(result["result"]) == 1
     assert result["N"] == 0
 
 
 def test_sltu_handles_no_wrap_around() -> None:
     result = _execute("SLTU", 0xFFFFFFFF, 1)
-
     assert _bits_to_int(result["result"]) == 0
     assert result["Z"] == 1
 
 
 def test_sltu_handles_unsigned_wraparound() -> None:
     result = _execute("SLTU", 1, 0xFFFFFFFF)
-
     assert _bits_to_int(result["result"]) == 1
     assert result["N"] == 0

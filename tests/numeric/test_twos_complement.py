@@ -18,18 +18,15 @@ def test_invert_bits_flips_all_bits() -> None:
 
 def test_negate_zero_is_zero() -> None:
     zero_bits = _signed_to_bits(0, 8)
-
     assert negate_twos_complement(zero_bits) == zero_bits
 
 
 def test_negate_one_is_all_ones() -> None:
     one_bits = _signed_to_bits(1, 8)
     expected = [1] * 8
-
     assert negate_twos_complement(one_bits) == expected
 
 
 def test_negate_min_value_wraps() -> None:
     min_bits = _signed_to_bits(0x80, 8)
-
     assert negate_twos_complement(min_bits) == min_bits

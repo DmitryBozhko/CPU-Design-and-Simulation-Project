@@ -9,6 +9,9 @@ _WORD_WIDTH = 32
 
 
 def _normalize_bits(bits: list[int]) -> list[int]:
+    # AI-BEGIN
+    """Normalize a bit list so every entry is 0 or 1."""
+    # AI-END
     normalized: list[int] = []
     for bit in bits:
         normalized.append(bit & 1)
@@ -16,18 +19,27 @@ def _normalize_bits(bits: list[int]) -> list[int]:
 
 
 def _sign_bit(bits: list[int]) -> int:
+    # AI-BEGIN
+    """Return the MSB of the provided bit vector."""
+    # AI-END
     if bits:
         return bits[-1] & 1
     return 0
 
 
 def _resolved_width(width: int) -> int:
+    # AI-BEGIN
+    """Ensure zero width defaults to 1 for downstream helpers."""
+    # AI-END
     if width:
         return width
     return 1
 
 
 def _sign_extend(bits: list[int], width: int) -> list[int]:
+    # AI-BEGIN
+    """Sign-extend a bit vector to the requested width."""
+    # AI-END
     target_width = _resolved_width(width)
     normalized = _normalize_bits(bits)
     sign = _sign_bit(normalized)
@@ -46,6 +58,11 @@ _COMPARISON_LESS: dict[int, int] = {-1: 1, 0: 0, 1: 0}
 
 
 class ALU:
+    # AI-BEGIN
+    """Bit-vector ALU that wraps numeric_core primitives."""
+
+    # AI-END
+
     _COMPARE_RESULT_WIDTH = 32
     _ADD_OPS = {"ADD", "SUB"}
     _LOGIC_OPS = {"AND", "OR", "XOR", "NOT"}
@@ -53,8 +70,10 @@ class ALU:
     _COMPARE_OPS = {"SLT", "SLTU"}
     _SHIFT_WEIGHTS = (1, 2, 4, 8, 16)
 
-
     def execute(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
+        # AI-BEGIN
+        """Dispatch an ALU operation by name."""
+        # AI-END
         if op in self._ADD_OPS:
             return self._execute_add_sub(op, a_bits, b_bits)
         if op in self._LOGIC_OPS:
@@ -65,8 +84,10 @@ class ALU:
             return self._execute_compare(op, a_bits, b_bits)
         raise ValueError(f"Unsupported ALU operation: {op!r}")
 
-
     def _execute_add_sub(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
+        # AI-BEGIN
+        """Perform signed ADD or SUB operations."""
+        # AI-END
         width = _WORD_WIDTH
         a_aligned = _sign_extend(a_bits, width)
         b_aligned = _sign_extend(b_bits, width)
@@ -97,8 +118,10 @@ class ALU:
             "V": overflow & 1,
         }
 
-
     def _execute_logic(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
+        # AI-BEGIN
+        """Perform AND/OR/XOR/NOT on the inputs."""
+        # AI-END
         width = _WORD_WIDTH
         a_aligned = _sign_extend(a_bits, width)
         if op == "NOT":
@@ -131,8 +154,10 @@ class ALU:
             "V": 0,
         }
 
-
     def _execute_shift(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
+        # AI-BEGIN
+        """Execute logical or arithmetic shifts using the shifter module."""
+        # AI-END
         width = _WORD_WIDTH
         operand = _sign_extend(a_bits, width)
         shamt = self._shift_amount_from_bits(_normalize_bits(b_bits))
@@ -160,6 +185,9 @@ class ALU:
         }
 
     def _execute_compare(self, op: str, a_bits: list[int], b_bits: list[int]) -> dict:
+        # AI-BEGIN
+        """Produce SLT/SLTU comparison results."""
+        # AI-END
         if op == "SLT":
             relation = compare_signed(a_bits, b_bits)
         else:
@@ -181,6 +209,9 @@ class ALU:
         }
 
     def _shift_amount_from_bits(self, bits: list[int]) -> int:
+        # AI-BEGIN
+        """Decode a five-bit little-endian shift amount."""
+        # AI-END
         amount = 0
         it = iter(bits)
         for weight in self._SHIFT_WEIGHTS:

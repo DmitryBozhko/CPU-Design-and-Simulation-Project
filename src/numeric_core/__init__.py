@@ -1,3 +1,4 @@
+#AI-BEGIN
 """Numeric core utilities package."""
 
 from .bit_utils import (
@@ -15,3 +16,4 @@ __all__ = [
     "string_to_bits",
     "print_bits_formatted",
 ]
+#AI-END

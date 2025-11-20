@@ -6,6 +6,9 @@ _MISSING = object()
 
 
 def is_zero(bits: list[int]) -> bool:
+    # AI-BEGIN
+    """Return True if every bit is zero."""
+    # AI-END
     for bit in bits:
         if bit & 1:
             return False
@@ -13,6 +16,9 @@ def is_zero(bits: list[int]) -> bool:
 
 
 def _sign_bit(bits: list[int]) -> int:
+    # AI-BEGIN
+    """Extract the sign bit (MSB) from a bit vector."""
+    # AI-END
     if bits:
         return bits[-1] & 1
     return 0
@@ -24,6 +30,9 @@ def _align_bits(
     b_bits: list[int],
     b_fill: int,
 ) -> tuple[list[int], list[int]]:
+    # AI-BEGIN
+    """Align two bit vectors with fill values so they share width."""
+    # AI-END
     aligned_a: list[int] = []
     aligned_b: list[int] = []
     for a_bit, b_bit in zip_longest(a_bits, b_bits, fillvalue=_MISSING):
@@ -40,6 +49,9 @@ def _align_bits(
 
 
 def _invert_bits(bits: list[int]) -> list[int]:
+    # AI-BEGIN
+    """Bitwise invert a bit vector."""
+    # AI-END
     inverted: list[int] = []
     for bit in bits:
         inverted.append((bit ^ 1) & 1)
@@ -47,6 +59,9 @@ def _invert_bits(bits: list[int]) -> list[int]:
 
 
 def _subtract_aligned(a_bits: list[int], b_bits: list[int]) -> tuple[list[int], int]:
+    # AI-BEGIN
+    """Subtract aligned bit vectors, returning difference and borrow."""
+    # AI-END
     inverted_b = _invert_bits(b_bits)
     difference, carry_out = ripple_carry_adder(a_bits, inverted_b, cin=1)
     borrow = (carry_out ^ 1) & 1
@@ -54,6 +69,9 @@ def _subtract_aligned(a_bits: list[int], b_bits: list[int]) -> tuple[list[int], 
 
 
 def compare_unsigned(a_bits: list[int], b_bits: list[int]) -> int:
+    # AI-BEGIN
+    """Compare two unsigned bit vectors; return -1,0,1."""
+    # AI-END
     aligned_a, aligned_b = _align_bits(a_bits, 0, b_bits, 0)
     difference, borrow = _subtract_aligned(aligned_a, aligned_b)
     if borrow:
@@ -64,6 +82,9 @@ def compare_unsigned(a_bits: list[int], b_bits: list[int]) -> int:
 
 
 def compare_signed(a_bits: list[int], b_bits: list[int]) -> int:
+    # AI-BEGIN
+    """Compare two signed bit vectors; return -1,0,1."""
+    # AI-END
     a_sign = _sign_bit(a_bits)
     b_sign = _sign_bit(b_bits)
     if a_sign ^ b_sign:
